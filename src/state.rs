@@ -100,7 +100,7 @@ impl Sebulba {
         self.offset = 0;
         if let Some(idx) = self.selected {
             let mut container_to_view = self.all_containers[idx].clone();
-            match File::open("hoden.txt") {
+            match File::open(&container_to_view.name) {
                 Ok(mut file) => {
                     let mut content = String::new();
                     match file.read_to_string(&mut content) {

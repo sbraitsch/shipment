@@ -60,12 +60,22 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &Sebulba) {
         CurrentScreen::Detail(c) => {
             let view_height = chunks[1].height as usize;
             let lines: Vec<&str> = c.logs.lines().collect();
-            let items: Vec<ListItem> = lines[app.offset..=(app.offset + view_height).clamp(0, lines.len() - 1)].iter()
-                .map(|line|
+            let mut windows = lines.windows(view_height);
+            let view: Vec<ListItem> = if lines.len() < view_height {
+                lines.iter().map(|line|
                     ListItem::new(
-                        Line::from(Span::styled(*line, Style::default().fg(app.theme.mint)))
-                    )).collect();
-            f.render_widget(List::new(items).block(Block::default().borders(Borders::ALL)), chunks[1]);
+                        Line::from(Span::styled(String::from(*line), Style::default().fg(app.theme.mint)))
+                    )
+                ).collect()
+            } else {
+                windows.nth(app.offset).unwrap_or(windows.last().unwrap()).iter().map(|line|
+                    ListItem::new(
+                        Line::from(Span::styled(String::from(*line), Style::default().fg(app.theme.mint)))
+                    )
+                ).collect()
+            };
+
+            f.render_widget(List::new(view).block(Block::default().borders(Borders::ALL)), chunks[1]);
         }
         CurrentScreen::Log(_) => {}
     }
