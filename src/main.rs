@@ -1,7 +1,7 @@
 use std::io;
 
 use crossterm::{event, execute};
-use crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event, KeyCode};
+use crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::{prelude::{CrosstermBackend, Terminal}};
 use ratatui::backend::Backend;
@@ -43,20 +43,29 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut Sebulba) -> io::Res
         terminal.draw(|f| ui(f, app))?;
 
         if let Event::Key(key) = event::read()? {
-            match app.current_screen {
-                CurrentScreen::Main => match key.code {
-                    KeyCode::Char('r') => { app.list_files() }
-                    KeyCode::Char('q') => { return Ok(false) }
-                    _ => {}
-                },
-                CurrentScreen::Detail => match key.code {
-                    KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
-                    _ => {}
-                },
-                CurrentScreen::Log => match key.code {
-                    KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
-                    _ => {}
-                },
+            if key.kind == KeyEventKind::Press {
+                app.info = Ok(());
+                match &app.current_screen {
+                    CurrentScreen::Main => match key.code {
+                        KeyCode::Char('r') => { app.list_files() }
+                        KeyCode::Char('q') => { return Ok(false) }
+                        KeyCode::Up => { app.select_prev() }
+                        KeyCode::Down => { app.select_next() }
+                        KeyCode::Tab => { app.select_next() }
+                        KeyCode::Enter => { app.commit_selection() }
+                        _ => {}
+                    },
+                    CurrentScreen::Detail(c) => match key.code {
+                        KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
+                        KeyCode::Up => { app.dec_offset() }
+                        KeyCode::Down => { app.inc_offset(c.logs.lines().count()) }
+                        _ => {}
+                    },
+                    CurrentScreen::Log(_) => match key.code {
+                        KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
+                        _ => {}
+                    },
+                }
             }
         }
     }
