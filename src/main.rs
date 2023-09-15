@@ -38,7 +38,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut Sebulba) -> io::Result<bool> {
-
     loop {
         terminal.draw(|f| ui(f, app))?;
 
@@ -48,17 +47,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut Sebulba) -> io::Res
                 match &app.current_screen {
                     CurrentScreen::Main => match key.code {
                         KeyCode::Char('r') => { app.list_files() }
-                        KeyCode::Char('q') => { return Ok(false) }
+                        KeyCode::Char('q') => { return Ok(false); }
                         KeyCode::Up => { app.select_prev() }
                         KeyCode::Down => { app.select_next() }
                         KeyCode::Tab => { app.select_next() }
                         KeyCode::Enter => { app.commit_selection() }
                         _ => {}
                     },
-                    CurrentScreen::Detail(c) => match key.code {
+                    CurrentScreen::Detail(_) => match key.code {
                         KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
                         KeyCode::Up => { app.dec_offset() }
-                        KeyCode::Down => { app.inc_offset(c.logs.lines().count()) }
+                        KeyCode::Down => { app.inc_offset() }
                         _ => {}
                     },
                     CurrentScreen::Log(_) => match key.code {

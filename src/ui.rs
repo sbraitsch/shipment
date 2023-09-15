@@ -8,7 +8,7 @@ use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
 use crate::state::{CurrentScreen, Sebulba};
 
-pub fn ui<B: Backend>(f: &mut Frame<B>, app: &Sebulba) {
+pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -58,22 +58,25 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &Sebulba) {
             f.render_widget(container_list, chunks[1]);
         }
         CurrentScreen::Detail(c) => {
-            let view_height = chunks[1].height as usize;
+            let view_height = chunks[1].height as usize - 2;
             let lines: Vec<&str> = c.logs.lines().collect();
-            let mut windows = lines.windows(view_height);
-            let view: Vec<ListItem> = if lines.len() < view_height {
-                lines.iter().map(|line|
-                    ListItem::new(
-                        Line::from(Span::styled(String::from(*line), Style::default().fg(app.theme.mint)))
-                    )
-                ).collect()
+            let line_count = lines.len();
+            let mut lower_bound = 0;
+            let mut upper_bound = line_count;
+
+            if line_count < view_height || app.offset > (line_count.wrapping_sub(view_height)) {
+                if app.offset > 0 { app.offset = app.offset - 1 };
+                lower_bound = app.offset;
             } else {
-                windows.nth(app.offset).unwrap_or(windows.last().unwrap()).iter().map(|line|
-                    ListItem::new(
-                        Line::from(Span::styled(String::from(*line), Style::default().fg(app.theme.mint)))
-                    )
-                ).collect()
+                lower_bound = app.offset;
+                upper_bound = lower_bound + view_height;
             };
+
+            let view: Vec<ListItem> = lines[lower_bound..upper_bound].iter().map(|line|
+                ListItem::new(
+                    Line::from(Span::styled(String::from(*line), Style::default().fg(app.theme.mint)))
+                )
+            ).collect();
 
             f.render_widget(List::new(view).block(Block::default().borders(Borders::ALL)), chunks[1]);
         }

@@ -82,11 +82,8 @@ impl Sebulba {
         }
     }
 
-    pub fn inc_offset(&mut self, file_length: usize) {
-        match self.offset {
-            off if off == file_length => {},
-            _ => self.offset = self.offset + 1
-        }
+    pub fn inc_offset(&mut self) {
+        self.offset = self.offset + 1
     }
 
     pub fn dec_offset(&mut self) {
