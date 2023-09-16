@@ -56,9 +56,9 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Shipment) {
             if let Err(msg) = &app.info {
                 vec![Span::styled(msg, Style::default().fg(Color::LightRed))]
             } else {
-                vec![Span::styled("Press Enter for Details", Style::default().fg(primary_color)),
+                vec![Span::styled("Viewing", Style::default().fg(primary_color)),
                      Span::styled(" | ", Style::default().fg(Color::White)),
-                     Span::styled(&c.name, Style::default().fg(Color::LightYellow))]
+                     Span::styled(&c.name, Style::default().fg(Color::White))]
             }
         }
         _ => { vec![Span::styled("Critical Error", Style::default().fg(Color::LightRed))] }
@@ -91,10 +91,11 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Shipment) {
 fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, chunks: &Rc<[Rect]>, main_chunks: Rc<[Rect]>, c: Option<Container>) {
     let view_height = chunks[1].height as usize - 2;
     let view: Vec<ListItem>;
+    let mut title = String::new();
     if let Some(container) = c {
         let lines: Vec<&str> = container.logs.lines().collect();
         let line_count = lines.len();
-
+        title = container.name;
         if line_count < view_height || app.offset > (line_count.wrapping_sub(view_height)) {
             if app.offset > 0 { app.offset -= app.offset };
         }
@@ -102,7 +103,7 @@ fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, chunks:
         let upper_bound = (app.offset + view_height).clamp(0, line_count);
         view = lines[app.offset..upper_bound].iter().map(|line|
             ListItem::new(
-                Line::from(Span::styled(String::from(*line), Style::default().fg(app.theme.primary)))
+                Line::from(Span::styled(String::from(*line), Style::default()))
             )
         ).collect();
     } else {
@@ -114,6 +115,8 @@ fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, chunks:
     f.render_widget(List::new(view).block(Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(app.theme.primary))
+        .title(title)
+        .title_alignment(Center)
     ), main_chunks[1]);
 }
 
@@ -124,7 +127,7 @@ fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, main_
         let mut style = Style::default().fg(Color::Gray);
         if let Some(selected_idx) = app.selected_idx {
             if selected_idx == idx {
-                style = Style::default().fg(app.theme.primary)
+                style = Style::default().bg(app.theme.primary).fg(Color::Black)
             }
         };
         containers.push(ListItem::new(Line::from(Span::styled(
@@ -135,7 +138,9 @@ fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, main_
     let container_block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(app.theme.primary))
-        .style(Style::default());
+        .style(Style::default())
+        .title("Containers")
+        .title_alignment(Center);
     let container_list = List::new(containers).block(container_block);
     f.render_widget(container_list, main_chunks[0]);
 }
