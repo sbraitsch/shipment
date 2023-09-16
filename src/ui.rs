@@ -8,9 +8,9 @@ use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
-use crate::state::{Container, Mode, Sebulba};
+use crate::state::{Container, Mode, Shipment};
 
-pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba) {
+pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Shipment) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
@@ -31,7 +31,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba) {
     let primary_color = app.theme.primary;
 
     let title = Paragraph::new(Text::styled(
-        "Welcome to SEBULBA, the not-so-friendly Pod Manager",
+        "Welcome to Shipment, 1v1?",
         Style::default().fg(primary_color),
     )).alignment(Center).block(title_block);
 
@@ -88,7 +88,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba) {
     f.render_widget(key_notes_footer, footer_chunks[1]);
 }
 
-fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba, chunks: &Rc<[Rect]>, main_chunks: Rc<[Rect]>, c: Option<Container>) {
+fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, chunks: &Rc<[Rect]>, main_chunks: Rc<[Rect]>, c: Option<Container>) {
     let view_height = chunks[1].height as usize - 2;
     let view: Vec<ListItem>;
     if let Some(container) = c {
@@ -117,7 +117,7 @@ fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba, chunks: 
     ), main_chunks[1]);
 }
 
-fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba, main_chunks: &Rc<[Rect]>) {
+fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, main_chunks: &Rc<[Rect]>) {
     let mut containers = Vec::<ListItem>::new();
 
     for (idx, cnt) in app.all_containers.iter().enumerate() {

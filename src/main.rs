@@ -6,7 +6,7 @@ use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScree
 use ratatui::{prelude::{CrosstermBackend, Terminal}};
 use ratatui::backend::Backend;
 
-use crate::state::{Mode, Sebulba};
+use crate::state::{Mode, Shipment};
 use crate::ui::ui;
 
 pub mod state;
@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut terminal = Terminal::new(CrosstermBackend::new(stderr))?;
 
-    let mut sebulba = Sebulba::new();
+    let mut sebulba = Shipment::new();
     let res = run_app(&mut terminal, &mut sebulba);
 
     disable_raw_mode()?;
@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut Sebulba) -> io::Result<bool> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut Shipment) -> io::Result<bool> {
     loop {
         terminal.draw(|f| ui(f, app))?;
 

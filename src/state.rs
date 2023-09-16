@@ -42,7 +42,7 @@ impl Theme {
     }
 }
 
-pub struct Sebulba {
+pub struct Shipment {
     pub selected_idx: Option<usize>,
     pub all_containers: Vec<Container>,
     pub mode: Mode,
@@ -51,10 +51,10 @@ pub struct Sebulba {
     pub offset: usize
 }
 
-impl Sebulba {
-    pub fn new() -> Sebulba {
+impl Shipment {
+    pub fn new() -> Shipment {
 
-        let mut sebulba = Sebulba {
+        let mut shipment = Shipment {
             selected_idx: Some(0),
             all_containers: vec![],
             mode: Mode::Main(None),
@@ -62,8 +62,8 @@ impl Sebulba {
             theme: Theme::new(),
             offset: 0
         };
-        sebulba.list_files();
-        sebulba
+        shipment.list_files();
+        shipment
     }
 
     pub fn select_next(&mut self) {
