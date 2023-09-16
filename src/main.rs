@@ -6,7 +6,7 @@ use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScree
 use ratatui::{prelude::{CrosstermBackend, Terminal}};
 use ratatui::backend::Backend;
 
-use crate::state::{CurrentScreen, Sebulba};
+use crate::state::{Mode, Sebulba};
 use crate::ui::ui;
 
 pub mod state;
@@ -44,32 +44,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut Sebulba) -> io::Res
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press {
                 app.info = Ok(());
-                match &app.current_screen {
-                    CurrentScreen::Main => match key.code {
+                match &app.mode {
+                    Mode::Main(_) => match key.code {
                         KeyCode::Char('r') => { app.list_files() }
                         KeyCode::Char('q') => { return Ok(false); }
-                        KeyCode::Up => { app.select_prev() }
-                        KeyCode::Down => { app.select_next() }
-                        KeyCode::Tab => { app.select_next() }
-                        KeyCode::Enter => { app.commit_selection() }
-                        _ => {}
-                    },
-                    CurrentScreen::Detail(c) => match key.code {
-                        KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
-                        KeyCode::Up => { app.select_prev() }
-                        KeyCode::Down => { app.select_next() }
-                        KeyCode::Tab => { app.current_screen = CurrentScreen::File(c.clone()) }
-                        _ => {}
-                    },
-                    CurrentScreen::File(c) => match key.code {
-                        KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
                         KeyCode::Up => { app.dec_offset() }
                         KeyCode::Down => { app.inc_offset() }
-                        KeyCode::Tab => { app.current_screen = CurrentScreen::Detail(c.clone()) }
-                        _ => {}
-                    }
-                    CurrentScreen::Log(_) => match key.code {
-                        KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
+                        KeyCode::Tab => { app.select_next() }
                         _ => {}
                     },
                 }

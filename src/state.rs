@@ -1,16 +1,15 @@
 use std::fs;
 use std::fs::File;
-use std::io::{Read};
+use std::io::Read;
 use std::process::Command;
+
 use ratatui::style::Color;
-use crate::state::Status::EXITED;
+
+use crate::state::Status::UP;
 
 #[derive(Clone)]
-pub enum CurrentScreen {
-    Main,
-    Detail(Container),
-    Log(Container),
-    File(Container)
+pub enum Mode {
+    Main(Option<Container>),
 }
 
 #[derive(Clone)]
@@ -30,15 +29,15 @@ pub struct Container {
 }
 
 pub struct Theme {
-    pub pastel_blue: Color,
-    pub mint: Color
+    pub primary: Color,
+    pub highlight: Color
 }
 
 impl Theme {
     pub fn new() -> Self {
         Theme {
-            pastel_blue: Color::Rgb(137, 180, 250),
-            mint: Color::Rgb(106, 151, 153)
+            primary: Color::Rgb(137, 180, 250),
+            highlight: Color::Rgb(106, 151, 153)
         }
     }
 }
@@ -46,7 +45,7 @@ impl Theme {
 pub struct Sebulba {
     pub selected_idx: Option<usize>,
     pub all_containers: Vec<Container>,
-    pub current_screen: CurrentScreen,
+    pub mode: Mode,
     pub info: Result<(), String>,
     pub theme: Theme,
     pub offset: usize
@@ -54,15 +53,15 @@ pub struct Sebulba {
 
 impl Sebulba {
     pub fn new() -> Sebulba {
+
         let mut sebulba = Sebulba {
-            selected_idx: None,
+            selected_idx: Some(0),
             all_containers: vec![],
-            current_screen: CurrentScreen::Main,
+            mode: Mode::Main(None),
             info: Ok(()),
             theme: Theme::new(),
             offset: 0
         };
-
         sebulba.list_files();
         sebulba
     }
@@ -87,13 +86,13 @@ impl Sebulba {
     }
 
     pub fn inc_offset(&mut self) {
-        self.offset = self.offset + 1
+        self.offset += 1
     }
 
     pub fn dec_offset(&mut self) {
         match self.offset {
             0 => {},
-            _ => self.offset = self.offset - 1
+            _ => self.offset -= 1
         }
     }
 
@@ -107,7 +106,7 @@ impl Sebulba {
                     match file.read_to_string(&mut content) {
                         Ok(_) => {
                             container_to_view.logs = content.into();
-                            self.current_screen = CurrentScreen::Detail(container_to_view);
+                            self.mode = Mode::Main(Some(container_to_view));
                         }
                         Err(_) => { self.info = Err("File couldn't be opened.".into()) }
                     }
@@ -129,7 +128,7 @@ impl Sebulba {
     }
 
     pub fn list_files(&mut self) {
-        self.selected_idx = None;
+        self.selected_idx = Some(0);
         // Get the current directory (folder)
         let current_dir = std::env::current_dir().unwrap();
 
@@ -147,7 +146,7 @@ impl Sebulba {
                             name: file_name.to_string_lossy().parse().unwrap(),
                             cpu: 0.0,
                             mem: 0.0,
-                            status: EXITED(0),
+                            status: UP(0),
                             logs: String::new()
                         });
                     }
@@ -155,5 +154,6 @@ impl Sebulba {
             }
         });
         self.all_containers = found_containers;
+        self.commit_selection();
     }
 }

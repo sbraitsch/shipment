@@ -8,7 +8,7 @@ use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
-use crate::state::{Container, CurrentScreen, Sebulba};
+use crate::state::{Container, Mode, Sebulba};
 
 pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba) {
     let chunks = Layout::default()
@@ -25,10 +25,10 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba) {
 
     let title_block = Block::default()
         .borders(Borders::BOTTOM)
-        .border_style(Style::default().fg(app.theme.pastel_blue))
+        .border_style(Style::default().fg(app.theme.primary))
         .style(Style::default());
 
-    let primary_color = app.theme.pastel_blue;
+    let primary_color = app.theme.primary;
 
     let title = Paragraph::new(Text::styled(
         "Welcome to SEBULBA, the not-so-friendly Pod Manager",
@@ -42,65 +42,39 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba) {
         .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
         .split(chunks[1]);
 
-    let current_screen = app.current_screen.clone();
+    let current_screen = app.mode.clone();
 
     match current_screen {
-        CurrentScreen::Main => {
-            render_selection_list(f, app, &main_chunks);
-            f.render_widget(
-                Paragraph::new(
-                    Text::styled(
-                        "No Selection",
-                        Style::default().fg(Color::DarkGray)
-                    )
-                )
-                    .alignment(Center).block(Block::default()
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::DarkGray))),
-                main_chunks[1]);
-        }
-        CurrentScreen::Detail(c) | CurrentScreen::File(c) => {
+        Mode::Main(c) => {
             render_selection_list(f, app, &main_chunks);
             render_file_content(f, app, &chunks, main_chunks, c);
         }
-        CurrentScreen::Log(_) => {}
     }
 
-
-    let selected_name = if let Some(idx) = app.selected_idx {
-        &app.all_containers[idx].name
-    } else { "" };
-
-    let current_navigation_text = match &app.current_screen {
-        CurrentScreen::Main => {
+    let current_navigation_text = match &app.mode {
+        Mode::Main(Some(c)) => {
             if let Err(msg) = &app.info {
                 vec![Span::styled(msg, Style::default().fg(Color::LightRed))]
             } else {
                 vec![Span::styled("Press Enter for Details", Style::default().fg(primary_color)),
                      Span::styled(" | ", Style::default().fg(Color::White)),
-                     Span::styled(selected_name, Style::default().fg(Color::LightYellow))]
+                     Span::styled(&c.name, Style::default().fg(Color::LightYellow))]
             }
         }
-        CurrentScreen::Detail(c) | CurrentScreen::File(c) | CurrentScreen::Log(c) => {
-            vec![Span::styled("Viewing", Style::default().fg(Color::White)),
-                 Span::styled(" | ", Style::default().fg(primary_color)),
-                 Span::styled(&c.name, Style::default().fg(primary_color))]
-        }
+        _ => { vec![Span::styled("Critical Error", Style::default().fg(Color::LightRed))] }
     }.to_owned();
 
     let mode_footer = Paragraph::new(Line::from(current_navigation_text))
         .block(Block::default());
 
     let current_keys_hint = vec![
-        Span::styled("Q: Quit / Go Back", Style::default().fg(primary_color)),
+        Span::styled("Q: Quit", Style::default().fg(primary_color)),
         Span::styled(" | ", Style::default().fg(Color::White)),
-        Span::styled("D: Container Details", Style::default().fg(primary_color)),
+        Span::styled("L: Toggle Logs", Style::default().fg(primary_color)),
         Span::styled(" | ", Style::default().fg(Color::White)),
-        Span::styled("L: Container Logs", Style::default().fg(primary_color)),
+        Span::styled("TAB: Next Container", Style::default().fg(primary_color)),
         Span::styled(" | ", Style::default().fg(Color::White)),
-        Span::styled("TAB: Switch Panes", Style::default().fg(primary_color)),
-        Span::styled(" | ", Style::default().fg(Color::White)),
-        Span::styled("↑↓: Move", Style::default().fg(primary_color))];
+        Span::styled("↑↓: Move in Logs", Style::default().fg(primary_color))];
 
     let key_notes_footer =
         Paragraph::new(Line::from(current_keys_hint)).alignment(Right).block(Block::default());
@@ -114,30 +88,33 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba) {
     f.render_widget(key_notes_footer, footer_chunks[1]);
 }
 
-fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba, chunks: &Rc<[Rect]>, main_chunks: Rc<[Rect]>, c: Container) {
+fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba, chunks: &Rc<[Rect]>, main_chunks: Rc<[Rect]>, c: Option<Container>) {
     let view_height = chunks[1].height as usize - 2;
-    let lines: Vec<&str> = c.logs.lines().collect();
-    let line_count = lines.len();
+    let view: Vec<ListItem>;
+    if let Some(container) = c {
+        let lines: Vec<&str> = container.logs.lines().collect();
+        let line_count = lines.len();
 
-    if line_count < view_height || app.offset > (line_count.wrapping_sub(view_height)) {
-        if app.offset > 0 { app.offset = app.offset - 1 };
+        if line_count < view_height || app.offset > (line_count.wrapping_sub(view_height)) {
+            if app.offset > 0 { app.offset -= app.offset };
+        }
+
+        let upper_bound = (app.offset + view_height).clamp(0, line_count);
+        view = lines[app.offset..upper_bound].iter().map(|line|
+            ListItem::new(
+                Line::from(Span::styled(String::from(*line), Style::default().fg(app.theme.primary)))
+            )
+        ).collect();
+    } else {
+        view = vec![
+            ListItem::new(Line::from(Span::styled("REEEEEEEEEEE", Style::default().fg(app.theme.primary)))
+        )]
     }
-
-    let upper_bound = (app.offset + view_height).clamp(0, line_count);
-    let view: Vec<ListItem> = lines[app.offset..upper_bound].iter().map(|line|
-        ListItem::new(
-            Line::from(Span::styled(String::from(*line), Style::default().fg(app.theme.pastel_blue)))
-        )
-    ).collect();
 
     f.render_widget(List::new(view).block(Block::default()
         .borders(Borders::ALL)
-        .border_style(
-            match app.current_screen {
-                CurrentScreen::File(_) => Style::default().fg(app.theme.pastel_blue),
-                _ => Style::default()
-            }
-        )), main_chunks[1]);
+        .border_style(Style::default().fg(app.theme.primary))
+    ), main_chunks[1]);
 }
 
 fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba, main_chunks: &Rc<[Rect]>) {
@@ -147,7 +124,7 @@ fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba, main_c
         let mut style = Style::default().fg(Color::Gray);
         if let Some(selected_idx) = app.selected_idx {
             if selected_idx == idx {
-                style = Style::default().fg(app.theme.pastel_blue)
+                style = Style::default().fg(app.theme.primary)
             }
         };
         containers.push(ListItem::new(Line::from(Span::styled(
@@ -157,12 +134,8 @@ fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Sebulba, main_c
     }
     let container_block = Block::default()
         .borders(Borders::ALL)
-        .border_style(
-            match app.current_screen {
-                CurrentScreen::Detail(_) | CurrentScreen::Main => Style::default().fg(app.theme.pastel_blue),
-                _ => Style::default()
-            }
-        ).style(Style::default());
+        .border_style(Style::default().fg(app.theme.primary))
+        .style(Style::default());
     let container_list = List::new(containers).block(container_block);
     f.render_widget(container_list, main_chunks[0]);
 }
