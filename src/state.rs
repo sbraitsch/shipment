@@ -16,7 +16,7 @@ pub enum Mode {
 pub enum Status {
     UP(usize),
     EXITED(usize),
-    ERROR(String)
+    ERROR(String),
 }
 
 #[derive(Clone)]
@@ -25,19 +25,19 @@ pub struct Container {
     pub cpu: f32,
     pub mem: f32,
     pub status: Status,
-    pub logs: String
+    pub logs: String,
 }
 
 pub struct Theme {
     pub primary: Color,
-    pub highlight: Color
+    pub highlight: Color,
 }
 
 impl Theme {
     pub fn new() -> Self {
         Theme {
             primary: Color::Rgb(137, 180, 250),
-            highlight: Color::Rgb(106, 151, 153)
+            highlight: Color::Rgb(106, 151, 153),
         }
     }
 }
@@ -48,26 +48,25 @@ pub struct Shipment {
     pub mode: Mode,
     pub info: Result<(), String>,
     pub theme: Theme,
-    pub offset: usize
+    pub offset: usize,
 }
 
 impl Shipment {
     pub fn new() -> Shipment {
-
         let mut shipment = Shipment {
             selected_idx: Some(0),
             all_containers: vec![],
             mode: Mode::Main(None),
             info: Ok(()),
             theme: Theme::new(),
-            offset: 0
+            offset: 0,
         };
         shipment.list_files();
         shipment
     }
 
     pub fn select_next(&mut self) {
-        let max_idx = self.all_containers.len() -1;
+        let max_idx = self.all_containers.len() - 1;
         match self.selected_idx {
             Some(value) if value == max_idx => self.selected_idx = Some(0),
             None => self.selected_idx = Some(0),
@@ -77,10 +76,10 @@ impl Shipment {
     }
 
     pub fn select_prev(&mut self) {
-        let max_idx = self.all_containers.len() -1;
+        let max_idx = self.all_containers.len() - 1;
         match self.selected_idx {
             Some(0) | None => self.selected_idx = Some(max_idx),
-            Some(idx) => self.selected_idx = Some(idx - 1)
+            Some(idx) => self.selected_idx = Some(idx - 1),
         }
         self.commit_selection()
     }
@@ -91,8 +90,8 @@ impl Shipment {
 
     pub fn dec_offset(&mut self) {
         match self.offset {
-            0 => {},
-            _ => self.offset -= 1
+            0 => {}
+            _ => self.offset -= 1,
         }
     }
 
@@ -108,13 +107,12 @@ impl Shipment {
                             container_to_view.logs = content.into();
                             self.mode = Mode::Main(Some(container_to_view));
                         }
-                        Err(_) => { self.info = Err("File couldn't be opened.".into()) }
+                        Err(_) => self.info = Err("File couldn't be opened.".into()),
                     }
                 }
-                Err(_) => { self.info = Err("File couldn't be opened.".into()) }
+                Err(_) => self.info = Err("File couldn't be opened.".into()),
             }
         }
-
     }
 
     pub fn docker_ps_a(&mut self) {
@@ -147,7 +145,7 @@ impl Shipment {
                             cpu: 0.0,
                             mem: 0.0,
                             status: UP(0),
-                            logs: String::new()
+                            logs: String::new(),
                         });
                     }
                 }

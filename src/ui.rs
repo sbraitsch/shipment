@@ -1,12 +1,12 @@
 use std::rc::Rc;
 
 use ratatui::backend::Backend;
-use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::layout::Alignment::{Center, Right};
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use ratatui::Frame;
 
 use crate::state::{Container, Mode, Shipment};
 
@@ -19,7 +19,7 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Shipment) {
                 Constraint::Min(1),
                 Constraint::Length(3),
             ]
-                .as_ref(),
+            .as_ref(),
         )
         .split(f.size());
 
@@ -33,7 +33,9 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Shipment) {
     let title = Paragraph::new(Text::styled(
         "Welcome to Shipment, 1v1?",
         Style::default().fg(primary_color),
-    )).alignment(Center).block(title_block);
+    ))
+    .alignment(Center)
+    .block(title_block);
 
     f.render_widget(title, chunks[0]);
 
@@ -56,16 +58,23 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Shipment) {
             if let Err(msg) = &app.info {
                 vec![Span::styled(msg, Style::default().fg(Color::LightRed))]
             } else {
-                vec![Span::styled("Viewing", Style::default().fg(primary_color)),
-                     Span::styled(" | ", Style::default().fg(Color::White)),
-                     Span::styled(&c.name, Style::default().fg(Color::White))]
+                vec![
+                    Span::styled("Viewing", Style::default().fg(primary_color)),
+                    Span::styled(" | ", Style::default().fg(Color::White)),
+                    Span::styled(&c.name, Style::default().fg(Color::White)),
+                ]
             }
         }
-        _ => { vec![Span::styled("Critical Error", Style::default().fg(Color::LightRed))] }
-    }.to_owned();
+        _ => {
+            vec![Span::styled(
+                "Critical Error",
+                Style::default().fg(Color::LightRed),
+            )]
+        }
+    }
+    .to_owned();
 
-    let mode_footer = Paragraph::new(Line::from(current_navigation_text))
-        .block(Block::default());
+    let mode_footer = Paragraph::new(Line::from(current_navigation_text)).block(Block::default());
 
     let current_keys_hint = vec![
         Span::styled("Q: Quit", Style::default().fg(primary_color)),
@@ -74,10 +83,12 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Shipment) {
         Span::styled(" | ", Style::default().fg(Color::White)),
         Span::styled("TAB: Next Container", Style::default().fg(primary_color)),
         Span::styled(" | ", Style::default().fg(Color::White)),
-        Span::styled("↑↓: Move in Logs", Style::default().fg(primary_color))];
+        Span::styled("↑↓: Move in Logs", Style::default().fg(primary_color)),
+    ];
 
-    let key_notes_footer =
-        Paragraph::new(Line::from(current_keys_hint)).alignment(Right).block(Block::default());
+    let key_notes_footer = Paragraph::new(Line::from(current_keys_hint))
+        .alignment(Right)
+        .block(Block::default());
 
     let footer_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -88,7 +99,13 @@ pub fn ui<B: Backend>(f: &mut Frame<B>, app: &mut Shipment) {
     f.render_widget(key_notes_footer, footer_chunks[1]);
 }
 
-fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, chunks: &Rc<[Rect]>, main_chunks: Rc<[Rect]>, c: Option<Container>) {
+fn render_file_content<B: Backend>(
+    f: &mut Frame<B>,
+    app: &mut Shipment,
+    chunks: &Rc<[Rect]>,
+    main_chunks: Rc<[Rect]>,
+    c: Option<Container>,
+) {
     let view_height = chunks[1].height as usize - 2;
     let view: Vec<ListItem>;
     let mut title = String::new();
@@ -97,30 +114,45 @@ fn render_file_content<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, chunks:
         let line_count = lines.len();
         title = container.name;
         if line_count < view_height || app.offset > (line_count.wrapping_sub(view_height)) {
-            if app.offset > 0 { app.offset -= app.offset };
+            if app.offset > 0 {
+                app.offset -= app.offset
+            };
         }
 
         let upper_bound = (app.offset + view_height).clamp(0, line_count);
-        view = lines[app.offset..upper_bound].iter().map(|line|
-            ListItem::new(
-                Line::from(Span::styled(String::from(*line), Style::default()))
-            )
-        ).collect();
+        view = lines[app.offset..upper_bound]
+            .iter()
+            .map(|line| {
+                ListItem::new(Line::from(Span::styled(
+                    String::from(*line),
+                    Style::default(),
+                )))
+            })
+            .collect();
     } else {
-        view = vec![
-            ListItem::new(Line::from(Span::styled("REEEEEEEEEEE", Style::default().fg(app.theme.primary)))
-        )]
+        view = vec![ListItem::new(Line::from(Span::styled(
+            "REEEEEEEEEEE",
+            Style::default().fg(app.theme.primary),
+        )))]
     }
 
-    f.render_widget(List::new(view).block(Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(app.theme.primary))
-        .title(title)
-        .title_alignment(Center)
-    ), main_chunks[1]);
+    f.render_widget(
+        List::new(view).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(app.theme.primary))
+                .title(title)
+                .title_alignment(Center),
+        ),
+        main_chunks[1],
+    );
 }
 
-fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, main_chunks: &Rc<[Rect]>) {
+fn render_selection_list<B: Backend>(
+    f: &mut Frame<B>,
+    app: &mut Shipment,
+    main_chunks: &Rc<[Rect]>,
+) {
     let mut containers = Vec::<ListItem>::new();
 
     for (idx, cnt) in app.all_containers.iter().enumerate() {
@@ -130,10 +162,7 @@ fn render_selection_list<B: Backend>(f: &mut Frame<B>, app: &mut Shipment, main_
                 style = Style::default().bg(app.theme.primary).fg(Color::Black)
             }
         };
-        containers.push(ListItem::new(Line::from(Span::styled(
-            &cnt.name,
-            style,
-        ))));
+        containers.push(ListItem::new(Line::from(Span::styled(&cnt.name, style))));
     }
     let container_block = Block::default()
         .borders(Borders::ALL)
@@ -156,7 +185,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
                 Constraint::Percentage(percent_y),
                 Constraint::Percentage((100 - percent_y) / 2),
             ]
-                .as_ref(),
+            .as_ref(),
         )
         .split(r);
 
@@ -169,7 +198,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
                 Constraint::Percentage(percent_x),
                 Constraint::Percentage((100 - percent_x) / 2),
             ]
-                .as_ref(),
+            .as_ref(),
         )
         .split(popup_layout[1])[1] // Return the middle chunk
 }

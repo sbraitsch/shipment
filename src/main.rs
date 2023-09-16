@@ -1,10 +1,12 @@
 use std::io;
 
-use crossterm::{event, execute};
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-use ratatui::{prelude::{CrosstermBackend, Terminal}};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
+use crossterm::{event, execute};
 use ratatui::backend::Backend;
+use ratatui::prelude::{CrosstermBackend, Terminal};
 
 use crate::state::{Mode, Shipment};
 use crate::ui::ui;
@@ -23,7 +25,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let res = run_app(&mut terminal, &mut sebulba);
 
     disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
     terminal.show_cursor()?;
 
     if let Ok(do_print) = res {
@@ -46,11 +52,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut Shipment) -> io::Re
                 app.info = Ok(());
                 match &app.mode {
                     Mode::Main(_) => match key.code {
-                        KeyCode::Char('r') => { app.list_files() }
-                        KeyCode::Char('q') => { return Ok(false); }
-                        KeyCode::Up => { app.dec_offset() }
-                        KeyCode::Down => { app.inc_offset() }
-                        KeyCode::Tab => { app.select_next() }
+                        KeyCode::Char('r') => app.list_files(),
+                        KeyCode::Char('q') => {
+                            return Ok(false);
+                        }
+                        KeyCode::Up => app.dec_offset(),
+                        KeyCode::Down => app.inc_offset(),
+                        KeyCode::Tab => app.select_next(),
                         _ => {}
                     },
                 }
