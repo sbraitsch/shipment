@@ -5,10 +5,12 @@ use std::process::Command;
 use ratatui::style::Color;
 use crate::state::Status::EXITED;
 
+#[derive(Clone)]
 pub enum CurrentScreen {
     Main,
     Detail(Container),
-    Log(Container)
+    Log(Container),
+    File(Container)
 }
 
 #[derive(Clone)]
@@ -36,13 +38,13 @@ impl Theme {
     pub fn new() -> Self {
         Theme {
             pastel_blue: Color::Rgb(137, 180, 250),
-            mint: Color::Rgb(131, 240, 242)
+            mint: Color::Rgb(106, 151, 153)
         }
     }
 }
 
 pub struct Sebulba {
-    pub selected: Option<usize>,
+    pub selected_idx: Option<usize>,
     pub all_containers: Vec<Container>,
     pub current_screen: CurrentScreen,
     pub info: Result<(), String>,
@@ -53,7 +55,7 @@ pub struct Sebulba {
 impl Sebulba {
     pub fn new() -> Sebulba {
         let mut sebulba = Sebulba {
-            selected: None,
+            selected_idx: None,
             all_containers: vec![],
             current_screen: CurrentScreen::Main,
             info: Ok(()),
@@ -67,19 +69,21 @@ impl Sebulba {
 
     pub fn select_next(&mut self) {
         let max_idx = self.all_containers.len() -1;
-        match self.selected {
-            Some(value) if value == max_idx => self.selected = Some(0),
-            None => self.selected = Some(0),
-            Some(idx) => self.selected = Some(idx + 1),
+        match self.selected_idx {
+            Some(value) if value == max_idx => self.selected_idx = Some(0),
+            None => self.selected_idx = Some(0),
+            Some(idx) => self.selected_idx = Some(idx + 1),
         }
+        self.commit_selection()
     }
 
     pub fn select_prev(&mut self) {
         let max_idx = self.all_containers.len() -1;
-        match self.selected {
-            Some(0) | None => self.selected = Some(max_idx),
-            Some(idx) => self.selected = Some(idx - 1)
+        match self.selected_idx {
+            Some(0) | None => self.selected_idx = Some(max_idx),
+            Some(idx) => self.selected_idx = Some(idx - 1)
         }
+        self.commit_selection()
     }
 
     pub fn inc_offset(&mut self) {
@@ -95,7 +99,7 @@ impl Sebulba {
 
     pub fn commit_selection(&mut self) {
         self.offset = 0;
-        if let Some(idx) = self.selected {
+        if let Some(idx) = self.selected_idx {
             let mut container_to_view = self.all_containers[idx].clone();
             match File::open(&container_to_view.name) {
                 Ok(mut file) => {
@@ -125,7 +129,7 @@ impl Sebulba {
     }
 
     pub fn list_files(&mut self) {
-        self.selected = None;
+        self.selected_idx = None;
         // Get the current directory (folder)
         let current_dir = std::env::current_dir().unwrap();
 

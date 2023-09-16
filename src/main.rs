@@ -54,12 +54,20 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut Sebulba) -> io::Res
                         KeyCode::Enter => { app.commit_selection() }
                         _ => {}
                     },
-                    CurrentScreen::Detail(_) => match key.code {
+                    CurrentScreen::Detail(c) => match key.code {
+                        KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
+                        KeyCode::Up => { app.select_prev() }
+                        KeyCode::Down => { app.select_next() }
+                        KeyCode::Tab => { app.current_screen = CurrentScreen::File(c.clone()) }
+                        _ => {}
+                    },
+                    CurrentScreen::File(c) => match key.code {
                         KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
                         KeyCode::Up => { app.dec_offset() }
                         KeyCode::Down => { app.inc_offset() }
+                        KeyCode::Tab => { app.current_screen = CurrentScreen::Detail(c.clone()) }
                         _ => {}
-                    },
+                    }
                     CurrentScreen::Log(_) => match key.code {
                         KeyCode::Char('q') => app.current_screen = CurrentScreen::Main,
                         _ => {}
